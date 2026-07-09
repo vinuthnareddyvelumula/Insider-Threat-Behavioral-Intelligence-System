@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.database.database import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserLogin
+from app.utils.security import hash_password, verify_password
 
 router = APIRouter()
 
@@ -14,7 +15,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     new_user = User(
         username=user.username,
         email=user.email,
-        password=user.password
+        password=hash_password(user.password)
     )
 
     db.add(new_user)
@@ -25,10 +26,14 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
         "message": "User registered successfully",
         "user_id": new_user.id
     }
+
+
 @router.get("/users")
 def get_users(db: Session = Depends(get_db)):
     users = db.query(User).all()
     return users
+
+
 @router.get("/users/{user_id}")
 def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
@@ -37,3 +42,23 @@ def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
         return {"message": "User not found"}
 
     return user
+
+
+@router.post("/login")
+def login_user(user: UserLogin, db: Session = Depends(get_db)):
+
+    db_user = db.query(User).filter(
+        User.email == user.email
+    ).first()
+
+    if not db_user:
+        return {"message": "Invalid email or password"}
+
+    if not verify_password(user.password, db_user.password):
+        return {"message": "Invalid email or password"}
+
+    return {
+        "message": "Login successful",
+        "user_id": db_user.id,
+        "username": db_user.username
+    }
