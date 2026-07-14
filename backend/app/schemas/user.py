@@ -5,6 +5,7 @@ class UserCreate(BaseModel):
     username: str
     email: str
     password: str
+    role: str = "employee"
 
 
 class UserResponse(BaseModel):
@@ -14,6 +15,7 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class UserLogin(BaseModel):
     email: str
